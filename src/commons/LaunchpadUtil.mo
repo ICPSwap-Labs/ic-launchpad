@@ -7,8 +7,8 @@ import Debug "mo:base/Debug";
 import Principal "mo:base/Principal";
 import CommonModel "mo:commons/model/CommonModel";
 import PrincipalUtil "mo:commons/utils/PrincipalUtils";
-import TokenFactory "./token/TokenFactory";
-import Launchpad "./Launchpad";
+import TokenFactory "../token/TokenFactory";
+import Launchpad "../Launchpad";
 
 module {
 

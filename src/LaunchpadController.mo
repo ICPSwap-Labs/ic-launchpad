@@ -18,7 +18,7 @@ import ListUtil "mo:commons/utils/ListUtils";
 import PrincipalUtil "mo:commons/utils/PrincipalUtils";
 import TokenFactory "./token/TokenFactory";
 import LaunchpadStorage "canister:LaunchpadStorage";
-import LaunchpadUtil "./LaunchpadUtil";
+import LaunchpadUtil "./commons/LaunchpadUtil";
 import LaunchpadManager "./LaunchpadManager";
 import Launchpad "./Launchpad";
 
