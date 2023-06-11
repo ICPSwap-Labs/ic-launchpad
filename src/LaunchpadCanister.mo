@@ -89,37 +89,37 @@ actor class LaunchpadCanister() : async Launchpad.LaunchpadCanister = this {
 
     // add new investor --pricingToken--> Launchpad Canister
     public shared (msg) func addInvestor() : async CommonModel.BoolResult {
-        if (Principal.isAnonymous(msg.caller)) return #err("Illegal anonymous call");
-        var subaccount : ?Blob = Option.make(AccountUtils.principalToBlob(msg.caller));
-        if (null == subaccount) {
-            return #err("Subaccount can't be null");
-        };
-
-        let launchpad : Launchpad.Property = await LaunchpadUtil.getLaunchpadDetail(launchpadDetail);
-        if (Text.notEqual(launchpad.pricingTokenStandard, "ICP") and Text.notEqual(launchpad.pricingTokenStandard, "ICRC1") and Text.notEqual(launchpad.pricingTokenStandard, "ICRC2")) {
-            return #err("Illegal token standard: " # debug_show (launchpad.pricingTokenStandard));
-        };
-
         try {
-            var canisterPrincipal = Principal.fromActor(this);
-            let pricingTokenAdapter = TokenFactory.getAdapter(launchpad.pricingTokenId, launchpad.pricingTokenStandard);
-            var balance : Nat = await pricingTokenAdapter.balanceOf({
-                owner = canisterPrincipal;
-                subaccount = subaccount;
-            });
-            if (not (balance > 0)) {
-                return #err("The amount of add can’t be 0");
+            if (Principal.isAnonymous(msg.caller)) return #err("Illegal anonymous call");
+            var subaccount : ?Blob = Option.make(AccountUtils.principalToBlob(msg.caller));
+            if (null == subaccount) {
+                return #err("Subaccount can't be null");
             };
-            let pricingTokenFee = await LaunchpadUtil.getFee(launchpad.pricingTokenId, launchpad.pricingTokenStandard);
-            if (not (balance > pricingTokenFee)) {
-                return #err("The amount of add is less than the pricing token transfer fee");
+
+            let launchpad : Launchpad.Property = await LaunchpadUtil.getLaunchpadDetail(launchpadDetail);
+            if (Text.notEqual(launchpad.pricingTokenStandard, "ICP") and Text.notEqual(launchpad.pricingTokenStandard, "ICRC1") and Text.notEqual(launchpad.pricingTokenStandard, "ICRC2")) {
+                return #err("Illegal token standard: " # debug_show (launchpad.pricingTokenStandard));
             };
-            var expectedDepositedPricingTokenQuantity : Nat = balance;
 
             let investorSelfCaller : Principal = msg.caller;
             let investorAddress : Text = PrincipalUtil.toAddress(investorSelfCaller);
             if (isValidInvestor(investorAddress)) {
                 if (isInWhitelist(investorAddress)) {
+                    var canisterPrincipal = Principal.fromActor(this);
+                    let pricingTokenAdapter = TokenFactory.getAdapter(launchpad.pricingTokenId, launchpad.pricingTokenStandard);
+                    var balance : Nat = await pricingTokenAdapter.balanceOf({
+                        owner = canisterPrincipal;
+                        subaccount = subaccount;
+                    });
+                    if (not (balance > 0)) {
+                        return #err("The amount of add can’t be 0");
+                    };
+                    let pricingTokenFee = await LaunchpadUtil.getFee(launchpad.pricingTokenId, launchpad.pricingTokenStandard);
+                    if (not (balance > pricingTokenFee)) {
+                        return #err("The amount of add is less than the pricing token transfer fee");
+                    };
+                    var expectedDepositedPricingTokenQuantity : Nat = balance;
+
                     // investors can participate the launchpad in the range of specified date
                     let now : Time.Time = Time.now();
                     if (launchpad.startDateTime <= now and now < launchpad.endDateTime) {
@@ -385,33 +385,31 @@ actor class LaunchpadCanister() : async Launchpad.LaunchpadCanister = this {
             return #err("Subaccount can't be null");
         };
 
-        let launchpad : Launchpad.Property = await LaunchpadUtil.getLaunchpadDetail(launchpadDetail);
-        if (Text.notEqual(launchpad.pricingTokenStandard, "ICP") and Text.notEqual(launchpad.pricingTokenStandard, "ICRC1") and Text.notEqual(launchpad.pricingTokenStandard, "ICRC2")) {
-            return #err("Illegal token standard: " # debug_show (launchpad.pricingTokenStandard));
-        };
-
         try {
-            var canisterPrincipal = Principal.fromActor(this);
-            let pricingTokenAdapter = TokenFactory.getAdapter(launchpad.pricingTokenId, launchpad.pricingTokenStandard);
-            var balance : Nat = await pricingTokenAdapter.balanceOf({
-                owner = canisterPrincipal;
-                subaccount = subaccount;
-            });
-            if (not (balance > 0)) {
-                return #err("The amount of append can’t be 0");
-            };
-            let pricingTokenFee = await LaunchpadUtil.getFee(launchpad.pricingTokenId, launchpad.pricingTokenStandard);
-            if (not (balance > pricingTokenFee)) {
-                return #err("The amount of append is less than the pricing token transfer fee");
-            };
-            var investorQuantity : Nat = balance;
-
             let investorPrincipal : Principal = msg.caller;
             let investorAddress : Text = PrincipalUtil.toAddress(investorPrincipal);
             if (isValidInvestor(investorAddress)) {
                 if (isInWhitelist(investorAddress)) {
-                    let now : Time.Time = Time.now();
                     let launchpad : Launchpad.Property = await LaunchpadUtil.getLaunchpadDetail(launchpadDetail);
+                    if (Text.notEqual(launchpad.pricingTokenStandard, "ICP") and Text.notEqual(launchpad.pricingTokenStandard, "ICRC1") and Text.notEqual(launchpad.pricingTokenStandard, "ICRC2")) {
+                        return #err("Illegal token standard: " # debug_show (launchpad.pricingTokenStandard));
+                    };
+                    var canisterPrincipal = Principal.fromActor(this);
+                    let pricingTokenAdapter = TokenFactory.getAdapter(launchpad.pricingTokenId, launchpad.pricingTokenStandard);
+                    var balance : Nat = await pricingTokenAdapter.balanceOf({
+                        owner = canisterPrincipal;
+                        subaccount = subaccount;
+                    });
+                    if (not (balance > 0)) {
+                        return #err("The amount of append can’t be 0");
+                    };
+                    let pricingTokenFee = await LaunchpadUtil.getFee(launchpad.pricingTokenId, launchpad.pricingTokenStandard);
+                    if (not (balance > pricingTokenFee)) {
+                        return #err("The amount of append is less than the pricing token transfer fee");
+                    };
+                    var investorQuantity : Nat = balance;
+
+                    let now : Time.Time = Time.now();
                     if (launchpad.startDateTime <= now and now < launchpad.endDateTime) {
                         let unit : Launchpad.InvestorUnit = findInvestorByAddress(investorAddress);
                         let investor : Launchpad.Investor = unit.investor;
@@ -831,13 +829,16 @@ actor class LaunchpadCanister() : async Launchpad.LaunchpadCanister = this {
         };
     };
 
-    public shared func uninstall() : async CommonModel.BoolResult {
-        installed := false;
-        launchpadDetail := null;
-        // pricingTokenCanister := null;
-        // soldTokenCanister := null;
-        investors.clear();
-        #ok(not installed);
+    public shared (msg) func uninstall() : async CommonModel.BoolResult {
+        if (msg.caller == Option.get<Principal>(owner, Principal.fromActor(this))) {
+            installed := false;
+            launchpadDetail := null;
+            // pricingTokenCanister := null;
+            // soldTokenCanister := null;
+            investors.clear();
+            return #ok(not installed);
+        };
+        return #err("Denied!!");
     };
 
     public query func cycleBalance() : async CommonModel.NatResult {
