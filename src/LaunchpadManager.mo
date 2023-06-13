@@ -60,13 +60,13 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
     };
 
     // It will generate `CANISTER_NUMBER` Launchpad canister to handle operation of investors When installation
-    public shared (msg) func install(owner : Principal, prop : Launchpad.Property, wl : [Text]) : async CommonModel.ResponseResult<Launchpad.Property> {
+    public shared func install(owner : Principal, prop : Launchpad.Property, wl : [Text]) : async CommonModel.ResponseResult<Launchpad.Property> {
         if (installed) {
             throw Error.reject("launchpad_manager_canister_has_been_installed");
         };
 
-        if (Principal.isAnonymous(msg.caller)) return #err("Illegal anonymous call");
-        var subaccount : ?Blob = Option.make(AccountUtils.principalToBlob(msg.caller));
+        if (Principal.isAnonymous(owner)) return #err("Illegal anonymous call");
+        var subaccount : ?Blob = Option.make(AccountUtils.principalToBlob(owner));
         if (null == subaccount) {
             return #err("Subaccount can't be null");
         };
@@ -76,8 +76,8 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
         };
 
         var canisterPrincipal = Principal.fromActor(this);
-        let pricingTokenAdapter = TokenFactory.getAdapter(prop.soldTokenId, prop.soldTokenStandard);
-        var balance : Nat = await pricingTokenAdapter.balanceOf({
+        let soldTokenAdapter = TokenFactory.getAdapter(prop.soldTokenId, prop.soldTokenStandard);
+        var balance : Nat = await soldTokenAdapter.balanceOf({
             owner = canisterPrincipal;
             subaccount = subaccount;
         });
@@ -92,7 +92,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
 
         let canisterAddress : Text = PrincipalUtil.toAddress(canisterPrincipal);
         let creatorAddress : Text = PrincipalUtil.toAddress(owner);
-        ignore await transferToken(owner, null, canisterPrincipal, null, expectedSellQuantity, tokenTransFee, prop.soldTokenId, prop.soldTokenStandard);
+        ignore await transferToken(canisterPrincipal, subaccount, canisterPrincipal, null, expectedSellQuantity, tokenTransFee, prop.soldTokenId, prop.soldTokenStandard);
         let now : Time.Time = Time.now();
         launchpadDetail := ?{
             id = canisterAddress;
