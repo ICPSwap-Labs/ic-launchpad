@@ -183,11 +183,23 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
                     };
                     case (_) {
                         let ownerFinalTokenSet : Launchpad.TokenSet = Option.get<Launchpad.TokenSet>(finalTokenSet, LaunchpadUtil.defaultTokenSet);
+                        Debug.print("ownerFinalTokenSet.pricingToken.quantity: " # ownerFinalTokenSet.pricingToken.quantity);
                         let managerAddress : Text = PrincipalUtil.toAddress(Principal.fromActor(this));
                         let pricingTokenTransFee : Nat = await LaunchpadUtil.getFee(launchpad.pricingTokenId, launchpad.pricingTokenStandard);
-                        if (TextUtil.toNat(ownerFinalTokenSet.pricingToken.quantity) > pricingTokenTransFee) {
-                            // manager canister --pricingToken--> owner
-                            if (await transferByToAddress(launchpad.creatorPrincipal, TextUtil.toNat(ownerFinalTokenSet.pricingToken.quantity) - pricingTokenTransFee, launchpad.pricingTokenId, launchpad.pricingTokenStandard)) {
+                        // if (TextUtil.toNat(ownerFinalTokenSet.pricingToken.quantity) > pricingTokenTransFee) {
+                        // manager canister --pricingToken--> owner
+                        let tokenAdapter = TokenFactory.getAdapter(launchpad.pricingTokenId, launchpad.pricingTokenStandard);
+                        var balance : Nat = 0;
+                        try {
+                            balance := await tokenAdapter.balanceOf({
+                                owner = Principal.fromActor(this);
+                                subaccount = null;
+                            });
+                        } catch (e) {
+                            throw Error.reject(Error.message(e));
+                        };
+                        if (balance > pricingTokenTransFee) {
+                            if (await transferByToAddress(launchpad.creatorPrincipal, balance - pricingTokenTransFee, launchpad.pricingTokenId, launchpad.pricingTokenStandard)) {
                                 await LaunchpadStorage.addTransaction(
                                     managerAddress,
                                     {
@@ -204,12 +216,25 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
                             };
                         };
 
-                        Debug.print("ownerFinalTokenSet.token.quantity: " # ownerFinalTokenSet.token.quantity);
+                        // };
+                        Debug.print("pricingToken.balance: " # TextUtil.fromNat(balance));
 
                         let tokenTransFee : Nat = await LaunchpadUtil.getFee(launchpad.soldTokenId, launchpad.soldTokenStandard);
+                        Debug.print("ownerFinalTokenSet.token.quantity: " # ownerFinalTokenSet.token.quantity);
                         if (TextUtil.toNat(ownerFinalTokenSet.token.quantity) > tokenTransFee) {
                             // manager canister --token--> owner
-                            if (await transferByToAddress(launchpad.creatorPrincipal, TextUtil.toNat(ownerFinalTokenSet.token.quantity) - tokenTransFee, launchpad.soldTokenId, launchpad.soldTokenStandard)) {
+                            let tokenAdapter = TokenFactory.getAdapter(launchpad.soldTokenId, launchpad.soldTokenStandard);
+                            var balance : Nat = 0;
+                            try {
+                                balance := await tokenAdapter.balanceOf({
+                                    owner = Principal.fromActor(this);
+                                    subaccount = null;
+                                });
+                            } catch (e) {
+                                throw Error.reject(Error.message(e));
+                            };
+                            Debug.print("soldToken.balance: " # TextUtil.fromNat(balance));
+                            if (await transferByToAddress(launchpad.creatorPrincipal, balance - tokenTransFee, launchpad.soldTokenId, launchpad.soldTokenStandard)) {
                                 await LaunchpadStorage.addTransaction(
                                     managerAddress,
                                     {
