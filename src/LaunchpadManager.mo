@@ -23,6 +23,7 @@ import Launchpad "./Launchpad";
 import LaunchpadCanister "./LaunchpadCanister";
 import LaunchpadUtil "./commons/LaunchpadUtil";
 import CanisterModel "./commons/CanisterModel";
+import AccountUtils "./commons/AccountUtils";
 import TokenFactory "./token/TokenFactory";
 
 import LaunchpadStorage "canister:LaunchpadStorage";
@@ -59,18 +60,43 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
     };
 
     // It will generate `CANISTER_NUMBER` Launchpad canister to handle operation of investors When installation
-    public shared func install(owner : Principal, prop : Launchpad.Property, wl : [Text]) : async CommonModel.ResponseResult<Launchpad.Property> {
+    public shared (msg) func install(owner : Principal, prop : Launchpad.Property, wl : [Text]) : async CommonModel.ResponseResult<Launchpad.Property> {
         if (installed) {
             throw Error.reject("launchpad_manager_canister_has_been_installed");
         };
-        let now : Time.Time = Time.now();
-        let actorPrincipal : Principal = Principal.fromActor(this);
-        let actorAddress : Text = PrincipalUtil.toAddress(actorPrincipal);
+
+        if (Principal.isAnonymous(msg.caller)) return #err("Illegal anonymous call");
+        var subaccount : ?Blob = Option.make(AccountUtils.principalToBlob(msg.caller));
+        if (null == subaccount) {
+            return #err("Subaccount can't be null");
+        };
+
+        if (Text.notEqual(prop.soldTokenStandard, "ICP") and Text.notEqual(prop.soldTokenStandard, "ICRC1") and Text.notEqual(prop.soldTokenStandard, "ICRC2")) {
+            return #err("Illegal token standard: " # debug_show (prop.pricingTokenStandard));
+        };
+
+        var canisterPrincipal = Principal.fromActor(this);
+        let pricingTokenAdapter = TokenFactory.getAdapter(prop.soldTokenId, prop.soldTokenStandard);
+        var balance : Nat = await pricingTokenAdapter.balanceOf({
+            owner = canisterPrincipal;
+            subaccount = subaccount;
+        });
+        if (not (balance > 0)) {
+            return #err("The amount of add can’t be 0");
+        };
+        let tokenTransFee = await LaunchpadUtil.getFee(prop.soldTokenId, prop.soldTokenStandard);
+        if (not (balance >= tokenTransFee +TextUtil.toNat(prop.expectedSellQuantity) +Option.get<Nat>(prop.extraTokenFee, 0))) {
+            return #err("The amount of add is less than the token transfer fee");
+        };
+        var expectedSellQuantity : Nat = balance;
+
+        let canisterAddress : Text = PrincipalUtil.toAddress(canisterPrincipal);
         let creatorAddress : Text = PrincipalUtil.toAddress(owner);
-        ignore await transferByFromAddress(owner, TextUtil.toNat(prop.expectedSellQuantity) + Option.get<Nat>(prop.extraTokenFee, 0), prop.soldTokenId, prop.soldTokenStandard);
+        ignore await transferToken(owner, null, canisterPrincipal, null, expectedSellQuantity, tokenTransFee, prop.soldTokenId, prop.soldTokenStandard);
+        let now : Time.Time = Time.now();
         launchpadDetail := ?{
-            id = PrincipalUtil.toAddress(actorPrincipal);
-            cid = PrincipalUtil.toText(actorPrincipal);
+            id = canisterAddress;
+            cid = PrincipalUtil.toText(canisterPrincipal);
             name = prop.name;
             description = prop.description;
             startDateTime = prop.startDateTime;
@@ -106,7 +132,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
                 Principal.fromText(LaunchpadUtil.WALLET_CANISTER_ID),
                 owner,
             );
-            ignore await canister.install(prop, actorAddress, whitelist);
+            ignore await canister.install(prop, canisterAddress, whitelist);
             launchpadCanisters.add(canister);
             let cid : Text = PrincipalUtil.toText(Principal.fromActor(canister));
             routeCanisterMap.put(cid, Buffer.Buffer<Text>(0));
@@ -370,41 +396,89 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
         return #ok(size);
     };
 
-    // from address --token--> Launchpad manager Canister
-    private func transferByFromAddress(fromPrincipal : Principal, tokenQuantity : Nat, tokenCid : Text, tokenStandard : Text) : async Nat {
-        let fromAddress : Text = PrincipalUtil.toAddress(fromPrincipal);
-        let canisterAddress : Text = LaunchpadUtil.getCanisterAddress(this);
+    private func transferToken(fromPrincipal : Principal, fromSubAccount : ?Blob, toPrincipal : Principal, toSubAccount : ?Blob, tokenQuantity : Nat, transFee : Nat, tokenCid : Text, tokenStandard : Text) : async Nat {
+        let canisterAddress : Text = PrincipalUtil.toAddress(toPrincipal);
+        let investorAddress : Text = PrincipalUtil.toAddress(fromPrincipal);
         let tokenAdapter = TokenFactory.getAdapter(tokenCid, tokenStandard);
-        var transFee : Nat = 0;
-        try {
-            let transFee : Nat = await tokenAdapter.fee();
-        } catch (e) {
-            throw Error.reject(Error.message(e));
-        };
-        var params = {
-            from = { owner = fromPrincipal; subaccount = null };
-            from_subaccount = null;
-            to = {
-                owner = LaunchpadUtil.getCanisterPrincipal(this);
-                subaccount = null;
+        if (tokenQuantity > transFee) {
+            var transferTokenQuantity = Nat.sub(tokenQuantity, transFee);
+            var params = {
+                from = {
+                    owner = fromPrincipal;
+                    subaccount = fromSubAccount;
+                };
+                from_subaccount = fromSubAccount;
+                to = {
+                    owner = toPrincipal;
+                    subaccount = toSubAccount;
+                };
+                fee = null;
+                amount = transferTokenQuantity;
+                memo = null;
+                created_at_time = null;
             };
-            fee = null;
-            amount = tokenQuantity;
-            memo = null;
-            created_at_time = null;
-        };
-        switch (await tokenAdapter.transferFrom(params)) {
-            case (#Ok(index)) {
-                Debug.print("transfer from \"" # fromAddress # "\" to \"" # canisterAddress # "\", amount: " # debug_show (tokenQuantity) # ", token: Token, amountPrefee: " # TextUtil.fromNat(tokenQuantity - transFee));
-                return tokenQuantity - transFee;
+            if (Principal.toText(fromPrincipal) == Principal.toText(Principal.fromActor(this))) {
+                switch (await tokenAdapter.transfer(params)) {
+                    case (#Ok(index)) {
+                        Debug.print("transfer from " # Principal.toText(fromPrincipal) # " to " # Principal.toText(toPrincipal) # ", params: " # debug_show (params) # ", token: PricingToken, amountPrefee: " # TextUtil.fromNat(transferTokenQuantity));
+                        return transferTokenQuantity;
+                    };
+                    case (#Err(code)) {
+                        throw Error.reject("transfer from " # Principal.toText(fromPrincipal) # "_2_canister_failed: " # debug_show (code) # ", params:" # debug_show (params));
+                    };
+                };
+            } else {
+                switch (await tokenAdapter.transferFrom(params)) {
+                    case (#Ok(index)) {
+                        Debug.print("transfer from \"" # investorAddress # "\" to \"" # canisterAddress # "\", amount: " # debug_show (transferTokenQuantity) # ", token: PricingToken, amountPrefee: " # TextUtil.fromNat(transferTokenQuantity));
+                        return transferTokenQuantity;
+                    };
+                    case (#Err(code)) {
+                        let description : Text = "{transaction: {from: \"" # investorAddress # "\", to: \"" # canisterAddress # "\", value: " # TextUtil.fromNat(transferTokenQuantity) # ", token: \"PricingToken\", description: \"investor --pricingToken--> Launchpad Canister(" # canisterAddress # ")\"}}";
+                        throw Error.reject("tarsnfer_from_investor(" # investorAddress # ")_2_canister_failed: " # debug_show (code) # ", " # description);
+                    };
+                };
             };
-            case (#Err(code)) {
-                let description : Text = "{transaction: {from: \"" # fromAddress # "\", to: \"" # canisterAddress # "\", value: " # TextUtil.fromNat(tokenQuantity) # ", token: \"" # tokenCid # "\"}}";
-                throw Error.reject("tarsnfer_from_address(" # fromAddress # ")_to_manager_canister(" # canisterAddress # ")_failed: " # debug_show (code) # ", " # description);
-            };
+        } else {
+            throw Error.reject("Your_token(" # TextUtil.fromNat(tokenQuantity) # ")_is_lower_than_trans_fee(" # TextUtil.fromNat(transFee) # ")");
         };
-        return tokenQuantity;
     };
+
+    // from address --token--> Launchpad manager Canister
+    // private func transferByFromAddress(fromPrincipal : Principal, tokenQuantity : Nat, tokenCid : Text, tokenStandard : Text) : async Nat {
+    //     let fromAddress : Text = PrincipalUtil.toAddress(fromPrincipal);
+    //     let canisterAddress : Text = LaunchpadUtil.getCanisterAddress(this);
+    //     let tokenAdapter = TokenFactory.getAdapter(tokenCid, tokenStandard);
+    //     var transFee : Nat = 0;
+    //     try {
+    //         let transFee : Nat = await tokenAdapter.fee();
+    //     } catch (e) {
+    //         throw Error.reject(Error.message(e));
+    //     };
+    //     var params = {
+    //         from = { owner = fromPrincipal; subaccount = null };
+    //         from_subaccount = null;
+    //         to = {
+    //             owner = LaunchpadUtil.getCanisterPrincipal(this);
+    //             subaccount = null;
+    //         };
+    //         fee = null;
+    //         amount = tokenQuantity;
+    //         memo = null;
+    //         created_at_time = null;
+    //     };
+    //     switch (await tokenAdapter.transferFrom(params)) {
+    //         case (#Ok(index)) {
+    //             Debug.print("transfer from \"" # fromAddress # "\" to \"" # canisterAddress # "\", amount: " # debug_show (tokenQuantity) # ", token: Token, amountPrefee: " # TextUtil.fromNat(tokenQuantity - transFee));
+    //             return tokenQuantity - transFee;
+    //         };
+    //         case (#Err(code)) {
+    //             let description : Text = "{transaction: {from: \"" # fromAddress # "\", to: \"" # canisterAddress # "\", value: " # TextUtil.fromNat(tokenQuantity) # ", token: \"" # tokenCid # "\"}}";
+    //             throw Error.reject("tarsnfer_from_address(" # fromAddress # ")_to_manager_canister(" # canisterAddress # ")_failed: " # debug_show (code) # ", " # description);
+    //         };
+    //     };
+    //     return tokenQuantity;
+    // };
 
     // Launchpad manager Canister --token--> destination address
     private func transferByToAddress(destinationPrincipal : Principal, tokenQuantity : Nat, tokenCid : Text, tokenStandard : Text) : async Bool {
@@ -429,16 +503,14 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
             memo = null;
             created_at_time = null;
         };
-        if (tokenQuantity > transFee) {
-            let description : Text = "{transaction: {from: \"" # canisterAddress # "\", to: \"" # destinationAddress # "\", value: " # TextUtil.fromNat(tokenQuantity) # ", token: \"" # tokenCid # "\"}}";
-            switch (await tokenAdapter.transfer(params)) {
-                case (#Ok(index)) {
-                    Debug.print("Transfer success: " # description);
-                    return true;
-                };
-                case (#Err(code)) {
-                    throw Error.reject("tarsnfer_from_manager_canister(" # canisterAddress # ")_to_destination(" # destinationAddress # ")_failed: " # debug_show (code) # ", " # description);
-                };
+        let description : Text = "{transaction: {from: \"" # canisterAddress # "\", to: \"" # destinationAddress # "\", value: " # TextUtil.fromNat(tokenQuantity) # ", token: \"" # tokenCid # "\"}}";
+        switch (await tokenAdapter.transfer(params)) {
+            case (#Ok(index)) {
+                Debug.print("Transfer success: " # description);
+                return true;
+            };
+            case (#Err(code)) {
+                throw Error.reject("tarsnfer_from_manager_canister(" # canisterAddress # ")_to_destination(" # destinationAddress # ")_failed: " # debug_show (code) # ", " # description);
             };
         };
         return false;
@@ -489,9 +561,14 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
                             };
 
                             let eachLaunchpadTokenQuantity : Nat = TextUtil.toNat(eachLaunchpadFinalTokenViewSet.token.info.quantity);
+
+                            let soldTokenTransFee : Nat = await LaunchpadUtil.getFee(launchpad.soldTokenId, launchpad.soldTokenStandard);
+
                             if (eachLaunchpadTokenQuantity > 0) {
-                                // manager canister -token-> launchpad canister
-                                ignore await transferByToAddress(launchpadCanisterPrincipal, eachLaunchpadTokenQuantity, launchpad.soldTokenId, launchpad.soldTokenStandard);
+                                if (eachLaunchpadTokenQuantity > soldTokenTransFee) {
+                                    // manager canister -token-> launchpad canister
+                                    ignore await transferByToAddress(launchpadCanisterPrincipal, eachLaunchpadTokenQuantity -soldTokenTransFee, launchpad.soldTokenId, launchpad.soldTokenStandard);
+                                };
                                 extraTokenFee -= eachLaunchpadFinalTokenViewSet.token.transFee;
                                 Debug.print("manager canister -token-> launchpad");
                                 Debug.print("eachLaunchpadTokenQuantity: " # debug_show (eachLaunchpadTokenQuantity));

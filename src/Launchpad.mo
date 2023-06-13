@@ -99,7 +99,7 @@ module {
         addInvestorFromApprove : shared (Text) -> async CommonModel.BoolResult;
         //1. transfer pricing token from investor account to canister with subaccount
         //2. transfer pricing token from canister subaccount to canister
-        appendPricingTokenQuantity : shared() -> async CommonModel.BoolResult;
+        appendPricingTokenQuantity : shared () -> async CommonModel.BoolResult;
         //1. approve pricing token from investor account to canister
         //2. transferFrom pricing token from investor account to canister
         appendPricingTokenQuantityFromApprove : shared (Text) -> async CommonModel.BoolResult;
