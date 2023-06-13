@@ -72,7 +72,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
         };
 
         if (Text.notEqual(prop.soldTokenStandard, "ICP") and Text.notEqual(prop.soldTokenStandard, "ICRC1") and Text.notEqual(prop.soldTokenStandard, "ICRC2")) {
-            return #err("Illegal token standard: " # debug_show (prop.pricingTokenStandard));
+            return #err("Illegal token standard: " # debug_show (prop.soldTokenStandard));
         };
 
         var canisterPrincipal = Principal.fromActor(this);
