@@ -85,7 +85,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
             return #err("The amount of add can’t be 0");
         };
         let tokenTransFee = await LaunchpadUtil.getFee(prop.soldTokenId, prop.soldTokenStandard);
-        if (not (balance >= tokenTransFee +TextUtil.toNat(prop.expectedSellQuantity) +Option.get<Nat>(prop.extraTokenFee, 0))) {
+        if (not (balance > tokenTransFee)) {
             return #err("The amount of add is less than the token transfer fee");
         };
         var expectedSellQuantity : Nat = balance;
