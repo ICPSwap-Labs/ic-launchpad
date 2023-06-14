@@ -118,7 +118,7 @@ module {
 
     public type LaunchpadManager = actor {
         install : shared (Principal, Property, [Text]) -> async CommonModel.ResponseResult<Property>;
-        getDetail : shared () -> async CommonModel.ResponseResult<Property>;
+        getDetail : query () -> async CommonModel.ResponseResult<Property>;
         getWhitelistSize : query () -> async Nat;
         inWhitelist : query (Text) -> async CommonModel.BoolResult;
         getWhitelist : query (Nat, Nat) -> async CommonModel.ResponseResult<CommonModel.Page<Text>>;
