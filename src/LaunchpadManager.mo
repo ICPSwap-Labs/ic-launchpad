@@ -155,7 +155,14 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
 
     // Get detail of launchpad
     public shared func getDetail() : async CommonModel.ResponseResult<Launchpad.Property> {
-        #ok(await LaunchpadUtil.getLaunchpadDetail(launchpadDetail));
+        switch (launchpadDetail) {
+            case (?prop) {
+                #ok(prop);
+            };
+            case (_) {
+                throw Error.reject("The launchpad property is null.");
+            };
+        };
     };
 
     public query func getWhitelistSize() : async Nat {
