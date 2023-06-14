@@ -209,7 +209,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
                                         operationType = "withdraw";
                                         tokenName = ownerFinalTokenSet.pricingToken.name;
                                         tokenSymbol = ownerFinalTokenSet.pricingToken.symbol;
-                                        quantity = ownerFinalTokenSet.pricingToken.quantity;
+                                        quantity = TextUtil.fromNat(balance - pricingTokenTransFee);
                                         address = managerAddress;
                                     },
                                 );
@@ -244,7 +244,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
                                         operationType = "withdraw";
                                         tokenName = ownerFinalTokenSet.token.name;
                                         tokenSymbol = ownerFinalTokenSet.token.symbol;
-                                        quantity = ownerFinalTokenSet.token.quantity;
+                                        quantity = TextUtil.fromNat(balance - tokenTransFee);
                                         address = managerAddress;
                                     },
                                 );
@@ -592,7 +592,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
                             if (eachLaunchpadTokenQuantity > 0) {
                                 if (eachLaunchpadTokenQuantity > soldTokenTransFee) {
                                     // manager canister -token-> launchpad canister
-                                    ignore await transferByToAddress(launchpadCanisterPrincipal, eachLaunchpadTokenQuantity -soldTokenTransFee, launchpad.soldTokenId, launchpad.soldTokenStandard);
+                                    ignore await transferByToAddress(launchpadCanisterPrincipal, eachLaunchpadTokenQuantity, launchpad.soldTokenId, launchpad.soldTokenStandard);
                                 };
                                 extraTokenFee -= eachLaunchpadFinalTokenViewSet.token.transFee;
                                 Debug.print("manager canister -token-> launchpad");
