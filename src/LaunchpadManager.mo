@@ -155,7 +155,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
     };
 
     // Get detail of launchpad
-    public shared func getDetail() : async CommonModel.ResponseResult<Launchpad.Property> {
+    public query func getDetail() : async CommonModel.ResponseResult<Launchpad.Property> {
         switch (launchpadDetail) {
             case (?prop) {
                 #ok(prop);
