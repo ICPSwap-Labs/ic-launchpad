@@ -34,6 +34,7 @@ module {
         creatorPrincipal : Principal;
         createdDateTime : Time.Time;
         settled : ?Bool;
+        canisterQuantity : Nat;
     };
 
     public type Investor = {

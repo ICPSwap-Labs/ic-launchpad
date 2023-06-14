@@ -59,7 +59,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
         delete_canister : { canister_id : Principal } -> async ();
     };
 
-    // It will generate `CANISTER_NUMBER` Launchpad canister to handle operation of investors When installation
+    // It will generate `CANISTER_NUMBER` or `prop.canisterQuantity` Launchpad canister to handle operation of investors When installation
     public shared func install(owner : Principal, prop : Launchpad.Property, wl : [Text]) : async CommonModel.ResponseResult<Launchpad.Property> {
         if (installed) {
             throw Error.reject("launchpad_manager_canister_has_been_installed");
@@ -120,6 +120,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
             creatorPrincipal = owner;
             createdDateTime = now;
             settled = ?false;
+            canisterQuantity = prop.canisterQuantity;
         };
         whitelist := wl;
         // install launchpad canister list
@@ -145,7 +146,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
             canisters.add(canisterView);
 
             index += 1;
-            if (index == LaunchpadUtil.CANISTER_NUMBER) {
+            if (index == prop.canisterQuantity) {
                 break generationLaunchpad;
             };
         };
@@ -283,6 +284,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
                             creatorPrincipal = launchpad.creatorPrincipal;
                             createdDateTime = launchpad.createdDateTime;
                             settled = ?true;
+                            canisterQuantity = launchpad.canisterQuantity;
                         };
                         return #ok(ownerFinalTokenSet);
                     };
@@ -653,6 +655,7 @@ actor class LaunchpadManager() : async Launchpad.LaunchpadManager = this {
                         creatorPrincipal = launchpad.creatorPrincipal;
                         createdDateTime = launchpad.createdDateTime;
                         settled = ?true;
+                        canisterQuantity = launchpad.canisterQuantity;
                     };
                     await LaunchpadStorage.addSettledLaunchpad(await LaunchpadUtil.getLaunchpadDetail(launchpadDetail));
                     #ok(true);

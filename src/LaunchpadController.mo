@@ -74,10 +74,11 @@ actor LaunchpadController {
             creatorPrincipal = prop.creatorPrincipal;
             createdDateTime = prop.createdDateTime;
             settled = false;
+            canisterQuantity = prop.canisterQuantity;
         };
 
         if (await canCreate(msg.caller, wrappedProp.name, wrappedProp.soldTokenId, wrappedProp.soldTokenStandard, TextUtil.toNat(wrappedProp.expectedSellQuantity), Option.get<Nat>(wrappedProp.extraTokenFee, 0))) {
-            let cycles = Nat.mul(LaunchpadUtil.CANISTER_NUMBER + 1, _initCycles);
+            let cycles = Nat.mul(prop.canisterQuantity + 1, _initCycles);
 
             ExperimentalCycles.add(cycles); // pay for the cycle fee
             let manager : Launchpad.LaunchpadManager = await LaunchpadManager.LaunchpadManager();
@@ -133,6 +134,7 @@ actor LaunchpadController {
             creatorPrincipal = prop.creatorPrincipal;
             createdDateTime = prop.createdDateTime;
             settled = ?false;
+            canisterQuantity = prop.canisterQuantity;
         };
         let manager : Launchpad.LaunchpadManager = actor (cid) : Launchpad.LaunchpadManager;
         switch (await manager.install(msg.caller, wrappedProp, wl)) {
