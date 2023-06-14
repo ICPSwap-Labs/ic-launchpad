@@ -1,33 +1,29 @@
 {
-    "canisters": {
-        "LaunchpadCanister": {
-            "main": "./src/LaunchpadCanister.mo",
-            "type": "motoko"
-        },
-        "LaunchpadManager": {
-            "main": "./src/LaunchpadManager.mo",
-            "type": "motoko"
-        },
-        "LaunchpadController": {
-            "main": "./src/LaunchpadController.mo",
-            "type": "motoko"
-        },
-        "LaunchpadStorage": {
-            "main": "./src/LaunchpadStorage.mo",
-            "type": "motoko"
-        }
+  "canisters": {
+    "LaunchpadManager": {
+      "main": "./src/LaunchpadManager.mo",
+      "type": "motoko"
     },
-    "defaults": {
-        "build": {
-          "packtool": "vessel sources"
-        }
-      },
-    "dfx": "0.11.1",
-    "networks": {
-        "local": {
-            "bind": "127.0.0.1:8000",
-            "type": "ephemeral"
-        }
+    "LaunchpadController": {
+      "main": "./src/LaunchpadController.mo",
+      "type": "motoko"
     },
-    "version": 1
+    "LaunchpadStorage": {
+      "main": "./src/LaunchpadStorage.mo",
+      "type": "motoko"
+    }
+  },
+  "defaults": {
+    "build": {
+      "packtool": "vessel sources"
+    }
+  },
+  "dfx": "0.14.1",
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    }
+  },
+  "version": 1
 }
