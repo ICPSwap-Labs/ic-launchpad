@@ -13,8 +13,8 @@ let
       },
       { dependencies = [ "base" ]
       , name = "commons"
-      , repo = "git@github.com:ICPSwap-Labs/ic-commons-v2.git"
-      , version = "main"
+      , repo = "git@github.com:ICPSwap-Labs/ic-commons.git"
+      , version = "master"
       }
     ] : List Package
 

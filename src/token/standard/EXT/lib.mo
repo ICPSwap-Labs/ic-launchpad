@@ -5,7 +5,7 @@ import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 import Error "mo:base/Error";
 import Option "mo:base/Option";
-import PrincipalUtils "mo:commons/utils/PrincipalUtils";
+import PrincipalUtils "mo:commons/PrincipalUtils";
 import Types "../../TokenTypes";
 import ExtCore "./ext/Core";
 import ExtCommon "./ext/Common";

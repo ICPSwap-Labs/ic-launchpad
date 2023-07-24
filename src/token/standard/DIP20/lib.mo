@@ -3,7 +3,7 @@ import Blob "mo:base/Blob";
 import Nat8 "mo:base/Nat8";
 import Principal "mo:base/Principal";
 import Error "mo:base/Error";
-import PrincipalUtils "mo:commons/utils/PrincipalUtils";
+import PrincipalUtils "mo:commons/PrincipalUtils";
 import Types "../../TokenTypes";
 import Debug "mo:base/Debug";
 import Option "mo:base/Option";

@@ -1,25 +1,27 @@
-import Text "mo:base/Text";
 import Nat "mo:base/Nat";
+import Text "mo:base/Text";
 import Bool "mo:base/Bool";
 import Blob "mo:base/Blob";
-import Buffer "mo:base/Buffer";
-import Debug "mo:base/Debug";
 import Time "mo:base/Time";
+import Debug "mo:base/Debug";
 import Error "mo:base/Error";
-import Option "mo:base/Option";
-import Principal "mo:base/Principal";
 import Array "mo:base/Array";
 import Order "mo:base/Order";
-import CommonModel "mo:commons/model/CommonModel";
+import Buffer "mo:base/Buffer";
+import Option "mo:base/Option";
+import Principal "mo:base/Principal";
 import ExperimentalCycles "mo:base/ExperimentalCycles";
+
+import TextUtil "mo:commons/TextUtils";
+import ListUtil "mo:commons/CollectUtils";
+import PrincipalUtil "mo:commons/PrincipalUtils";
+
+import Launchpad "./Launchpad";
+import CommonModel "./commons/CommonModel";
 import CanisterModel "./commons/CanisterModel";
-import TextUtil "mo:commons/utils/TextUtils";
-import ListUtil "mo:commons/utils/ListUtils";
-import PrincipalUtil "mo:commons/utils/PrincipalUtils";
 import TokenFactory "./token/TokenFactory";
 import LaunchpadUtil "./commons/LaunchpadUtil";
 import LaunchpadManager "./LaunchpadManager";
-import Launchpad "./Launchpad";
 
 actor LaunchpadController {
 

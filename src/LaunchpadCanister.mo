@@ -13,18 +13,20 @@ import Option "mo:base/Option";
 import Principal "mo:base/Principal";
 import ExperimentalCycles "mo:base/ExperimentalCycles";
 
-import TextUtil "mo:commons/utils/TextUtils";
-import IntUtil "mo:commons/utils/IntUtils";
-import ListUtil "mo:commons/utils/ListUtils";
-import CommonModel "mo:commons/model/CommonModel";
-import LaunchpadStorage "canister:LaunchpadStorage";
-import PrincipalUtil "mo:commons/utils/PrincipalUtils";
+import IntUtil "mo:commons/IntUtils";
+import NatUtils "mo:commons/NatUtils";
+import TextUtil "mo:commons/TextUtils";
+import ListUtil "mo:commons/CollectUtils";
+import PrincipalUtil "mo:commons/PrincipalUtils";
 
 import Launchpad "./Launchpad";
-import LaunchpadUtil "./commons/LaunchpadUtil";
-import AccountUtils "./commons/AccountUtils";
+import CommonModel "./commons/CommonModel";
 import TokenFactory "./token/TokenFactory";
-import NatUtils "mo:commons/utils/NatUtils";
+import AccountUtils "./commons/AccountUtils";
+import LaunchpadUtil "./commons/LaunchpadUtil";
+
+import LaunchpadStorage "canister:LaunchpadStorage";
+
 
 actor class LaunchpadCanister() : async Launchpad.LaunchpadCanister = this {
 

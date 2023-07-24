@@ -1,10 +1,11 @@
-import Text "mo:base/Text";
 import Nat "mo:base/Nat";
 import Int "mo:base/Int";
+import Text "mo:base/Text";
 import Time "mo:base/Time";
 import Bool "mo:base/Bool";
 import Principal "mo:base/Principal";
-import CommonModel "mo:commons/model/CommonModel";
+
+import CommonModel "./commons/CommonModel";
 
 module {
 
